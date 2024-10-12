@@ -9,6 +9,7 @@ const BookCard = ({ book, onBookSelect }) => {
         <h2 className="text-lg font-bold">{book.title}</h2>
         <p className="text-gray-600">Author: {book.author}</p>
         <p className="text-gray-600">Publisher: {book.publisher}</p>
+        
       </div>
     </div>
   );

@@ -1,44 +1,67 @@
- import "./index.css";
+import "./index.css";
 import React, { useState, useEffect } from 'react';
 import SearchBar from './components/SearchBar';
 import BookList from './components/BookList';
 import BookDetails from './components/BookDetails';
+import Contact from './components/Contact';
+import Footer from './components/Footer';
+
 
 function App() {
   const [searchQuery, setSearchQuery] = useState('');
   const [books, setBooks] = useState([]);
   const [selectedBook, setSelectedBook] = useState(null);
   const [error, setError] = useState(null);
+  const [loading, setLoading] = useState(false);
 
   useEffect(() => {
     const fetchBooks = async () => {
-      try {
-        const response = await fetch(`https://openlibrary.org/search.json?q=${searchQuery}`);
-        const data = await response.json();
-        const books = data.docs.map((doc) => ({
-          key: doc.key,
-          title: doc.title_suggest,
-          author: doc.author_name && doc.author_name[0],
-          publisher: doc.publisher && doc.publisher[0],
-          cover: doc.cover && doc.cover.small,
-          cover_i: doc.cover_i,
-          description: doc.description,
-          publication_date: doc.publish_date,
-          isbn: doc.isbn && doc.isbn[0],
-          number_of_pages: doc.number_of_pages,
-          subjects: doc.subject,
-        }));
-        setBooks(books);
-      } catch (error) {
-        setError(error.message);
+      if (searchQuery.trim() !== '') {
+        setLoading(true);
+        setError(null); // Reset error state on new search
+        try {
+          const response = await fetch(`https://openlibrary.org/search.json?q=${searchQuery}`);
+          if (!response.ok) {
+            throw new Error(`HTTP error! Status: ${response.status}`);
+          }
+          const data = await response.json();
+          const booksData = data.docs.map((doc) => ({
+            key: doc.key,
+            title: doc.title_suggest,
+            author: doc.author_name?.[0] ?? 'Unknown',
+            publisher: doc.publisher?.[0] ?? 'Unknown',
+            cover: doc.cover?.small ?? null,
+            description: doc.description ?? 'No description available',
+            publication_date: doc.publish_date ?? 'Unknown',
+            isbn: doc.isbn?.[0] ?? 'N/A',
+            number_of_pages: doc.number_of_pages ?? 'N/A',
+            subjects: doc.subject ?? [],
+          }));
+          setBooks(booksData);
+        } catch (error) {
+          console.error('Fetch error:', error);
+          setError(`Error fetching books: ${error.message}`);
+        } finally {
+          setLoading(false);
+        }
       }
     };
 
-    fetchBooks();
+    // Only fetch books when searchQuery is updated
+    if (searchQuery.trim() !== '') {
+      fetchBooks();
+    }
   }, [searchQuery]);
 
   const handleSearch = (event) => {
     setSearchQuery(event.target.value);
+  };
+
+  const handleSearchSubmit = () => {
+    const trimmedSearchQuery = searchQuery.trim();
+    if (trimmedSearchQuery !== '') {
+      setSearchQuery(trimmedSearchQuery); // This will trigger the useEffect to fetch books
+    }
   };
 
   const handleBookSelect = (book) => {
@@ -46,16 +69,31 @@ function App() {
   };
 
   return (
-    
     <div className="container mx-auto p-4">
       <SearchBar onSearch={handleSearch} />
-      {books.length > 0 ? (
-        <BookList books={books} onBookSelect={handleBookSelect} />
+      <button
+        type="button"
+        className="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded mt-2"
+        onClick={handleSearchSubmit}
+      >
+        Search
+      </button>
+      {loading ? (
+        <p>Loading...</p>
       ) : (
-        <p className="text-gray-600">No books found</p>
+        books.length > 0 ? (
+          <BookList books={books} onBookSelect={handleBookSelect} />
+        ) : (
+          <p className="text-gray-600">No books found</p>
+        )
       )}
       {selectedBook && <BookDetails book={selectedBook} />}
       {error && <p className="text-red-600">{error}</p>}
+      <div className="mt-4">
+        <Contact />
+      </div>
+      <Footer />
+      
     </div>
   );
 }
