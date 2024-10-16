@@ -24,7 +24,7 @@ function App() {
             throw new Error(`HTTP error! Status: ${response.status}`);
           }
           const data = await response.json();
-          console.log('Books fetched:', data);
+          //console.log('Books fetched:', data);
           const booksData = data.items.map((item) => ({
             id: item.id,
             title: item.volumeInfo.title,
