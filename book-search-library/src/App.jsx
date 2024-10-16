@@ -1,11 +1,9 @@
-import "./index.css";
 import React, { useState, useEffect } from 'react';
 import SearchBar from './components/SearchBar';
 import BookList from './components/BookList';
 import BookDetails from './components/BookDetails';
 import Contact from './components/Contact';
 import Footer from './components/Footer';
-
 
 function App() {
   const [searchQuery, setSearchQuery] = useState('');
@@ -20,22 +18,24 @@ function App() {
         setLoading(true);
         setError(null); // Reset error state on new search
         try {
-          const response = await fetch(`https://openlibrary.org/search.json?q=${searchQuery}`);
+          const apiKey = 'AIzaSyDKaY0TGroKhPhl0VBapu6lKhBMdQ8D_5Q';
+          const response = await fetch(`https://www.googleapis.com/books/v1/volumes?q=${searchQuery}&key=${apiKey}`);
           if (!response.ok) {
             throw new Error(`HTTP error! Status: ${response.status}`);
           }
           const data = await response.json();
-          const booksData = data.docs.map((doc) => ({
-            key: doc.key,
-            title: doc.title_suggest,
-            author: doc.author_name?.[0] ?? 'Unknown',
-            publisher: doc.publisher?.[0] ?? 'Unknown',
-            cover: doc.cover?.small ?? null,
-            description: doc.description ?? 'No description available',
-            publication_date: doc.publish_date ?? 'Unknown',
-            isbn: doc.isbn?.[0] ?? 'N/A',
-            number_of_pages: doc.number_of_pages ?? 'N/A',
-            subjects: doc.subject ?? [],
+          console.log('Books fetched:', data);
+          const booksData = data.items.map((item) => ({
+            id: item.id,
+            title: item.volumeInfo.title,
+            authors: item.volumeInfo.authors,
+            publisher: item.volumeInfo.publisher,
+            cover: item.volumeInfo.imageLinks?.thumbnail,
+            description: item.volumeInfo.description,
+            publicationDate: item.volumeInfo.publishedDate,
+            isbn: item.volumeInfo.industryIdentifiers[0].identifier,
+            pageCount: item.volumeInfo.pageCount,
+            categories: item.volumeInfo.categories,
           }));
           setBooks(booksData);
         } catch (error) {
@@ -70,7 +70,7 @@ function App() {
 
   return (
     <div className="container mx-auto p-4">
-      <SearchBar onSearch={handleSearch} />
+      <SearchBar searchQuery={searchQuery} onSearch={handleSearch} />
       <button
         type="button"
         className="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded mt-2"
@@ -93,7 +93,6 @@ function App() {
         <Contact />
       </div>
       <Footer />
-      
     </div>
   );
 }
